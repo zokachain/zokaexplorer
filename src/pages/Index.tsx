@@ -1,13 +1,11 @@
 import { useEffect, useState, FormEvent } from "react";
-import { Search, Activity, Layers, Cpu, Sparkles, ShieldCheck, ArrowUpRight } from "lucide-react";
+import { Search, Github, Twitter, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 
 type Metric = {
   label: string;
   value: string;
-  hint: string;
-  Icon: typeof Activity;
 };
 
 const formatNumber = (n: number) =>
@@ -17,7 +15,6 @@ const Index = () => {
   const [query, setQuery] = useState("");
   const [tick, setTick] = useState(0);
 
-  // Simulated live metrics — replace with real RPC later.
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 4000);
     return () => clearInterval(id);
@@ -29,30 +26,10 @@ const Index = () => {
   const baseEmission = 18421003.12;
 
   const metrics: Metric[] = [
-    {
-      label: "Height",
-      value: formatNumber(baseHeight + tick),
-      hint: "Latest block",
-      Icon: Layers,
-    },
-    {
-      label: "Difficulty",
-      value: formatNumber(baseDifficulty + Math.sin(tick) * 12),
-      hint: "Network",
-      Icon: Activity,
-    },
-    {
-      label: "Hashrate",
-      value: `${formatNumber(baseHashrate + Math.cos(tick) * 4)} MH/s`,
-      hint: "Aggregate",
-      Icon: Cpu,
-    },
-    {
-      label: "Emission",
-      value: `${formatNumber(baseEmission + tick * 1.25)} ZKA`,
-      hint: "Circulating",
-      Icon: Sparkles,
-    },
+    { label: "Height", value: formatNumber(baseHeight + tick) },
+    { label: "Difficulty", value: formatNumber(baseDifficulty + Math.sin(tick) * 12) },
+    { label: "Hashrate", value: `${formatNumber(baseHashrate + Math.cos(tick) * 4)} MH/s` },
+    { label: "Emission", value: `${formatNumber(baseEmission + tick * 1.25)} ZKA` },
   ];
 
   const handleSearch = (e: FormEvent) => {
@@ -61,14 +38,14 @@ const Index = () => {
     if (!q) {
       toast({
         title: "Enter a transaction hash",
-        description: "Paste the tx hash you want to look up.",
+        description: "Paste the zka… hash you want to look up.",
       });
       return;
     }
-    if (q.length < 16) {
+    if (!q.toLowerCase().startsWith("zka") || q.length < 16) {
       toast({
-        title: "Hash looks too short",
-        description: "Zoka tx hashes are long hex strings.",
+        title: "Invalid Zoka address",
+        description: "Zoka hashes start with zka and are long alphanumeric strings.",
         variant: "destructive",
       });
       return;
@@ -81,156 +58,110 @@ const Index = () => {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      {/* Ambient layers */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: "var(--gradient-radial)" }}
-        aria-hidden
-      />
-      <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" aria-hidden />
-      <div className="pointer-events-none absolute inset-0 bg-noise opacity-60" aria-hidden />
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.6), transparent)",
-        }}
-        aria-hidden
-      />
+      <div className="pointer-events-none absolute inset-0 bg-grid opacity-50" aria-hidden />
 
       {/* Nav */}
-      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+      <header className="relative z-10 mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
         <a href="/" className="flex items-center gap-2.5">
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card">
-            <span className="font-mono-tight text-sm font-bold text-primary">Z</span>
-            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card">
+            <span className="font-mono-tight text-xs font-bold text-foreground">Z</span>
           </div>
           <span className="font-mono-tight text-sm tracking-tight text-foreground">
-            zoka<span className="text-primary">explorer</span>
+            zokaexplorer
           </span>
         </a>
 
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="hidden items-center gap-2 sm:flex">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="pulse-dot absolute inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="pulse-dot absolute inline-flex h-1.5 w-1.5 rounded-full bg-signal" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-signal" />
             </span>
-            <span>Mainnet · Online</span>
+            <span>Mainnet</span>
           </span>
           <span className="hidden h-4 w-px bg-border sm:block" />
           <span className="font-mono-tight">v0.1.0</span>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative z-10 mx-auto max-w-3xl px-6 pt-16 pb-12 text-center sm:pt-24">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground backdrop-blur">
-          <ShieldCheck className="h-3 w-3 text-primary" />
-          zk-SNARK · privacy first
+      {/* Metrics on top */}
+      <section className="relative z-10 mx-auto max-w-5xl px-6 pt-4">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4">
+          {metrics.map(({ label, value }) => (
+            <div
+              key={label}
+              className="bg-card px-5 py-4"
+            >
+              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                {label}
+              </div>
+              <div className="mt-2 font-mono-tight text-lg tracking-tight text-foreground">
+                {value}
+              </div>
+            </div>
+          ))}
         </div>
+      </section>
 
-        <h1 className="text-gradient text-balance text-4xl font-semibold leading-tight tracking-tight sm:text-6xl">
-          Look up a private
-          <br />
-          transaction on Zoka.
+      {/* Hero / Search */}
+      <section className="relative z-10 mx-auto max-w-2xl px-6 pt-20 pb-12 text-center sm:pt-28">
+        <h1 className="text-balance text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+          zokaexplorer
         </h1>
-
-        <p className="mx-auto mt-5 max-w-xl text-balance text-sm text-muted-foreground sm:text-base">
-          A minimal explorer for a zero-knowledge network. You can only see what
-          you already know — paste a tx hash you own to reveal it.
+        <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground">
+          Private zk-SNARK block explorer
         </p>
 
-        {/* Search */}
-        <form onSubmit={handleSearch} className="relative mx-auto mt-10 max-w-2xl">
-          <div className="group relative">
-            <div
-              className="absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-300 group-focus-within:opacity-100"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.45), transparent)",
-              }}
-              aria-hidden
+        <form onSubmit={handleSearch} className="relative mx-auto mt-10">
+          <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-1.5 pl-4 transition-colors focus-within:border-muted-foreground/40">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="zka185qd6h7w48iBy…"
+              spellCheck={false}
+              autoComplete="off"
+              className="font-mono-tight w-full bg-transparent py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+              aria-label="Transaction hash"
             />
-            <div className="relative flex items-center gap-2 rounded-2xl border border-border bg-card/80 p-2 pl-4 backdrop-blur transition-colors focus-within:border-primary/60">
-              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="0x… paste your transaction hash"
-                spellCheck={false}
-                autoComplete="off"
-                className="font-mono-tight w-full bg-transparent py-3 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
-                aria-label="Transaction hash"
-              />
-              <Button
-                type="submit"
-                size="sm"
-                className="h-10 rounded-xl bg-primary px-4 text-primary-foreground hover:bg-primary/90"
-              >
-                Search
-                <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              size="sm"
+              className="h-9 rounded-lg bg-signal px-4 text-[hsl(var(--signal-foreground))] hover:bg-signal/90"
+            >
+              Search
+              <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
           </div>
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            Only the owner of a transaction can decrypt it. No browsing. No
-            tracing.
-          </p>
         </form>
       </section>
 
-      {/* Metrics */}
-      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-24">
-        <div className="mb-4 flex items-end justify-between">
-          <div>
-            <h2 className="text-sm font-medium tracking-tight text-foreground">
-              Network
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Live indicators · refreshed every 4s
-            </p>
-          </div>
-          <span className="font-mono-tight text-[11px] text-muted-foreground">
-            zoka · mainnet
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {metrics.map(({ label, value, hint, Icon }) => (
-            <article
-              key={label}
-              className="group relative overflow-hidden rounded-2xl border border-border p-5 transition-colors hover:border-primary/40"
-              style={{ background: "var(--gradient-card)", boxShadow: "var(--shadow-card)" }}
+      {/* Footer */}
+      <footer className="relative z-10 mx-auto max-w-5xl px-6 pb-10">
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-[11px] text-muted-foreground sm:flex-row">
+          <span>© {new Date().getFullYear()} zokaexplorer</span>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              <div
-                className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.5), transparent)",
-                }}
-                aria-hidden
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                  {label}
-                </span>
-                <Icon className="h-3.5 w-3.5 text-primary/80 transition-transform group-hover:scale-110" />
-              </div>
-              <div className="mt-5 font-mono-tight text-2xl tracking-tight text-foreground">
-                {value}
-              </div>
-              <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>
-            </article>
-          ))}
+              <Github className="h-3.5 w-3.5" />
+            </a>
+            <a
+              href="https://twitter.com"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Twitter"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Twitter className="h-3.5 w-3.5" />
+            </a>
+          </div>
         </div>
-
-        {/* Footer note */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-[11px] text-muted-foreground sm:flex-row">
-          <span>© {new Date().getFullYear()} ZokaExplorer · Privacy by zk-SNARK</span>
-          <span className="font-mono-tight">built for the noir network</span>
-        </div>
-      </section>
+      </footer>
     </main>
   );
 };
