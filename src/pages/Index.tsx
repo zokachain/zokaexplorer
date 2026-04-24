@@ -1,7 +1,10 @@
 import { useEffect, useState, FormEvent } from "react";
-import { Search, Github, Twitter, ArrowUpRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 
 type Metric = {
   label: string;
@@ -14,6 +17,7 @@ const formatNumber = (n: number) =>
 const Index = () => {
   const [query, setQuery] = useState("");
   const [tick, setTick] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 4000);
@@ -50,48 +54,20 @@ const Index = () => {
       });
       return;
     }
-    toast({
-      title: "Searching network…",
-      description: `Looking up ${q.slice(0, 10)}…${q.slice(-6)}`,
-    });
+    navigate(`/tx/${encodeURIComponent(q)}`);
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <main className="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-50" aria-hidden />
 
-      {/* Nav */}
-      <header className="relative z-10 mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-        <a href="/" className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card">
-            <span className="font-mono-tight text-xs font-bold text-foreground">Z</span>
-          </div>
-          <span className="font-mono-tight text-sm tracking-tight text-foreground">
-            zokaexplorer
-          </span>
-        </a>
+      <SiteHeader />
 
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="hidden items-center gap-2 sm:flex">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="pulse-dot absolute inline-flex h-1.5 w-1.5 rounded-full bg-signal" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-signal" />
-            </span>
-            <span>Mainnet</span>
-          </span>
-          <span className="hidden h-4 w-px bg-border sm:block" />
-          <span className="font-mono-tight">v0.1.0</span>
-        </div>
-      </header>
-
-      {/* Metrics on top */}
-      <section className="relative z-10 mx-auto max-w-5xl px-6 pt-4">
+      {/* Metrics */}
+      <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pt-2">
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4">
           {metrics.map(({ label, value }) => (
-            <div
-              key={label}
-              className="bg-card px-5 py-4"
-            >
+            <div key={label} className="bg-card px-5 py-4">
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 {label}
               </div>
@@ -104,7 +80,12 @@ const Index = () => {
       </section>
 
       {/* Hero / Search */}
-      <section className="relative z-10 mx-auto max-w-2xl px-6 pt-20 pb-12 text-center sm:pt-28">
+      <section className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 py-16 text-center">
+        <div className="mx-auto mb-5 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <ShieldCheck className="h-3 w-3 text-signal" />
+          zk-SNARK · privacy preserving
+        </div>
+
         <h1 className="text-balance text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
           zokaexplorer
         </h1>
@@ -112,7 +93,7 @@ const Index = () => {
           Private zk-SNARK block explorer
         </p>
 
-        <form onSubmit={handleSearch} className="relative mx-auto mt-10">
+        <form onSubmit={handleSearch} className="relative mx-auto mt-8 w-full">
           <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-1.5 pl-4 transition-colors focus-within:border-muted-foreground/40">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
@@ -133,35 +114,13 @@ const Index = () => {
               <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
             </Button>
           </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Only the owner of a transaction can decrypt it.
+          </p>
         </form>
       </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 mx-auto max-w-5xl px-6 pb-10">
-        <div className="flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-[11px] text-muted-foreground sm:flex-row">
-          <span>© {new Date().getFullYear()} zokaexplorer</span>
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="GitHub"
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <Github className="h-3.5 w-3.5" />
-            </a>
-            <a
-              href="https://twitter.com"
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Twitter"
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              <Twitter className="h-3.5 w-3.5" />
-            </a>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 };
