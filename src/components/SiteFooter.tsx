@@ -6,7 +6,7 @@ const SiteFooter = () => (
       <span>© {new Date().getFullYear()} zokaexplorer</span>
       <div className="flex items-center gap-3">
         <a
-          href="https://github.com"
+          href="https://github.com/zokachain"
           target="_blank"
           rel="noreferrer"
           aria-label="GitHub"
@@ -15,7 +15,7 @@ const SiteFooter = () => (
           <Github className="h-3.5 w-3.5" />
         </a>
         <a
-          href="https://twitter.com"
+          href="https://x.com/zokachain"
           target="_blank"
           rel="noreferrer"
           aria-label="Twitter"
