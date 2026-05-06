@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, ArrowUpRight, ShieldCheck, Lock, Eye, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import MetricSparkline from "@/components/MetricSparkline";
+import { search } from "@/lib/api";
 
 const formatNumber = (n: number) =>
   n.toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -61,25 +62,41 @@ const Index = () => {
     },
   ];
 
-  const handleSearch = (e: FormEvent) => {
+  const handleSearch = async (e: FormEvent) => {
     e.preventDefault();
     const q = query.trim();
     if (!q) {
       toast({
-        title: "Enter a transaction hash",
-        description: "Paste the zka… hash you want to look up.",
+        title: "Enter a search term",
+        description: "Search by tx hash, block height, block hash, or address.",
       });
       return;
     }
-    if (!q.toLowerCase().startsWith("zka") || q.length < 16) {
+
+    // Use the centralized search API to resolve the query type
+    const result = await search(q);
+
+    if (!result) {
       toast({
-        title: "Invalid Zoka address",
-        description: "Zoka hashes start with zka and are long alphanumeric strings.",
+        title: "Not found",
+        description: "No matching transaction, block, or address found.",
         variant: "destructive",
       });
       return;
     }
-    navigate(`/tx/${encodeURIComponent(q)}`);
+
+    // Route to the correct detail page based on result type
+    switch (result.type) {
+      case "transaction":
+        navigate(`/tx/${encodeURIComponent(result.id)}`);
+        break;
+      case "block":
+        navigate(`/block/${encodeURIComponent(result.id)}`);
+        break;
+      case "address":
+        navigate(`/address/${encodeURIComponent(result.id)}`);
+        break;
+    }
   };
 
   return (
