@@ -1,22 +1,31 @@
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, useRef, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ArrowUpRight, ShieldCheck, Lock, Eye } from "lucide-react";
+import { Search, ArrowUpRight, ShieldCheck, Lock, Eye, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-
-type Metric = {
-  label: string;
-  value: string;
-};
+import MetricSparkline from "@/components/MetricSparkline";
 
 const formatNumber = (n: number) =>
   n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
+const HISTORY_LEN = 30;
+
+const generateHistory = (base: number, fn: (i: number) => number) =>
+  Array.from({ length: HISTORY_LEN }, (_, i) => base + fn(i));
+
+const METRIC_COLORS = [
+  "hsl(142, 60%, 45%)",  // signal green
+  "hsl(220, 60%, 55%)",  // blue
+  "hsl(35, 80%, 55%)",   // amber
+  "hsl(280, 50%, 55%)",  // purple
+];
+
 const Index = () => {
   const [query, setQuery] = useState("");
   const [tick, setTick] = useState(0);
+  const [expanded, setExpanded] = useState<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,11 +38,27 @@ const Index = () => {
   const baseHashrate = 312.4;
   const baseEmission = 18421003.12;
 
-  const metrics: Metric[] = [
-    { label: "Height", value: formatNumber(baseHeight + tick) },
-    { label: "Difficulty", value: formatNumber(baseDifficulty + Math.sin(tick) * 12) },
-    { label: "Hashrate", value: `${formatNumber(baseHashrate + Math.cos(tick) * 4)} MH/s` },
-    { label: "Emission", value: `${formatNumber(baseEmission + tick * 1.25)} ZKA` },
+  const metrics = [
+    {
+      label: "Height",
+      value: formatNumber(baseHeight + tick),
+      history: generateHistory(baseHeight, (i) => i + tick - HISTORY_LEN),
+    },
+    {
+      label: "Difficulty",
+      value: formatNumber(baseDifficulty + Math.sin(tick) * 12),
+      history: generateHistory(baseDifficulty, (i) => Math.sin(i + tick) * 12),
+    },
+    {
+      label: "Hashrate",
+      value: `${formatNumber(baseHashrate + Math.cos(tick) * 4)} MH/s`,
+      history: generateHistory(baseHashrate, (i) => Math.cos(i + tick) * 4),
+    },
+    {
+      label: "Emission",
+      value: `${formatNumber(baseEmission + tick * 1.25)} ZKA`,
+      history: generateHistory(baseEmission, (i) => (i + tick - HISTORY_LEN) * 1.25),
+    },
   ];
 
   const handleSearch = (e: FormEvent) => {
@@ -72,18 +97,63 @@ const Index = () => {
       {/* Metrics */}
       <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pt-4">
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4">
-          {metrics.map(({ label, value }) => (
-            <div key={label} className="group bg-card px-5 py-4 transition-colors hover:bg-accent/50">
+          {metrics.map(({ label, value, history }, idx) => (
+            <div
+              key={label}
+              onClick={() => setExpanded(idx)}
+              className="group relative cursor-pointer bg-card px-5 py-4 transition-colors hover:bg-accent/50"
+            >
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 {label}
               </div>
-              <div className="mt-2 font-mono-tight text-lg tracking-tight text-foreground">
+              <div className="mt-1 font-mono-tight text-lg tracking-tight text-foreground">
                 {value}
+              </div>
+              <div className="mt-2 opacity-70 group-hover:opacity-100 transition-opacity">
+                <MetricSparkline data={history} color={METRIC_COLORS[idx]} width={140} height={32} />
               </div>
             </div>
           ))}
         </div>
       </section>
+
+      {/* Fullscreen metric modal */}
+      {expanded !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm"
+          onClick={() => setExpanded(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl mx-6 rounded-2xl border border-border bg-card p-8 shadow-2xl shadow-black/60"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setExpanded(null)}
+              className="absolute right-4 top-4 rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              {metrics[expanded].label}
+            </div>
+            <div className="mt-2 font-mono-tight text-3xl tracking-tight text-foreground">
+              {metrics[expanded].value}
+            </div>
+            <div className="mt-6">
+              <MetricSparkline
+                data={metrics[expanded].history}
+                color={METRIC_COLORS[expanded]}
+                width={800}
+                height={260}
+              />
+            </div>
+            <p className="mt-4 text-xs text-muted-foreground/60">
+              Last {HISTORY_LEN} data points · Click outside to close
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Search Section */}
       <section className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 py-16">
