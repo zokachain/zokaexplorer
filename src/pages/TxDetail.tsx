@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, ShieldCheck, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -12,17 +12,9 @@ const truncate = (s: string, head = 10, tail = 8) =>
   s.length > head + tail + 1 ? `${s.slice(0, head)}…${s.slice(-tail)}` : s;
 
 const Field = ({
-  label,
-  value,
-  mono = false,
-  copyable = false,
-  link,
+  label, value, mono = false, copyable = false, link,
 }: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-  copyable?: boolean;
-  link?: string;
+  label: string; value: React.ReactNode; mono?: boolean; copyable?: boolean; link?: string;
 }) => {
   const onCopy = () => {
     if (typeof value === "string") {
@@ -31,9 +23,7 @@ const Field = ({
     }
   };
   const content = (
-    <span className={`min-w-0 flex-1 truncate text-sm text-foreground ${mono ? "font-mono-tight" : ""}`}>
-      {value}
-    </span>
+    <span className={`min-w-0 flex-1 truncate text-sm text-foreground ${mono ? "font-mono-tight" : ""}`}>{value}</span>
   );
   return (
     <div className="grid grid-cols-1 gap-1 border-b border-border px-5 py-4 last:border-b-0 sm:grid-cols-[180px_1fr] sm:gap-4 sm:items-center">
@@ -52,13 +42,25 @@ const Field = ({
 
 const TxDetail = () => {
   const { hash = "" } = useParams();
+  const navigate = useNavigate();
   const [tx, setTx] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    getTransaction(hash).then((t) => { setTx(t); setLoading(false); });
-  }, [hash]);
+    setError(null);
+    getTransaction(hash)
+      .then((t) => {
+        if (!t) {
+          navigate("/not-found", { replace: true });
+          return;
+        }
+        setTx(t);
+      })
+      .catch((e) => setError(e.message || "Failed to load transaction"))
+      .finally(() => setLoading(false));
+  }, [hash, navigate]);
 
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -70,7 +72,12 @@ const TxDetail = () => {
           <ArrowLeft className="h-3.5 w-3.5" /> Back to search
         </Link>
 
-        {loading || !tx ? (
+        {error ? (
+          <div className="mt-12 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        ) : loading || !tx ? (
           <div className="mt-12 text-center text-muted-foreground text-sm">Loading transaction…</div>
         ) : (
           <>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Copy, Wallet, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -20,13 +20,25 @@ const Field = ({ label, value, mono = false }: { label: string; value: React.Rea
 
 const AddressDetail = () => {
   const { address: addr = "" } = useParams();
+  const navigate = useNavigate();
   const [data, setData] = useState<Address | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    getAddress(addr).then((a) => { setData(a); setLoading(false); });
-  }, [addr]);
+    setError(null);
+    getAddress(addr)
+      .then((a) => {
+        if (!a) {
+          navigate("/not-found", { replace: true });
+          return;
+        }
+        setData(a);
+      })
+      .catch((e) => setError(e.message || "Failed to load address"))
+      .finally(() => setLoading(false));
+  }, [addr, navigate]);
 
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -38,7 +50,12 @@ const AddressDetail = () => {
           <ArrowLeft className="h-3.5 w-3.5" /> Back to search
         </Link>
 
-        {loading || !data ? (
+        {error ? (
+          <div className="mt-12 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        ) : loading || !data ? (
           <div className="mt-12 text-center text-muted-foreground text-sm">Loading address…</div>
         ) : (
           <>
@@ -78,9 +95,7 @@ const AddressDetail = () => {
             </div>
 
             <div className="mt-6 rounded-xl border border-border bg-card">
-              <div className="border-b border-border px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                Recent Transactions
-              </div>
+              <div className="border-b border-border px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Recent Transactions</div>
               {data.transactions.map((txHash) => (
                 <Link key={txHash} to={`/tx/${txHash}`} className="flex items-center gap-2 border-b border-border px-5 py-3 last:border-b-0 hover:bg-accent/40 transition-colors">
                   <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
