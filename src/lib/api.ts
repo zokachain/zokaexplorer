@@ -329,9 +329,13 @@ export async function getSuggestions(query: string): Promise<SearchSuggestion[]>
       detail: "Next block",
     });
   } else if (q.toLowerCase().startsWith("zka")) {
+    if (q.length > 40) {
+      suggestions.push(
+        { type: "transaction", id: q, label: `Tx ${q.slice(0, 16)}…`, detail: "Transaction hash" },
+      );
+    }
     suggestions.push(
-      { type: "transaction", id: q, label: `Tx ${q.slice(0, 16)}…`, detail: "Transaction hash" },
-      { type: "address", id: q, label: `Address ${q.slice(0, 16)}…`, detail: "Wallet address" },
+      { type: "address", id: q, label: `Address ${q.slice(0, 16)}…`, detail: "🔒 Private — view in wallet" },
     );
   } else if (q.toLowerCase().startsWith("0x")) {
     suggestions.push(
@@ -341,7 +345,6 @@ export async function getSuggestions(query: string): Promise<SearchSuggestion[]>
     suggestions.push(
       { type: "block", id: q, label: `Search blocks for "${q}"`, detail: "Block" },
       { type: "transaction", id: q, label: `Search txs for "${q}"`, detail: "Transaction" },
-      { type: "address", id: q, label: `Search addresses for "${q}"`, detail: "Address" },
     );
   }
 
