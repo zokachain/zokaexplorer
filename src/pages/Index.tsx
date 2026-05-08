@@ -36,15 +36,24 @@ const Index = () => {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(-1);
+  const [network, setNetwork] = useState(getActiveNetwork);
   const suggestionsRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
+  const isMainnet = network === "mainnet";
+
   useEffect(() => {
+    const unsub = onNetworkChange(() => setNetwork(getActiveNetwork()));
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (isMainnet) return;
     const id = setInterval(() => setTick((t) => t + 1), 4000);
     return () => clearInterval(id);
-  }, []);
+  }, [isMainnet]);
 
   // Close suggestions on outside click
   useEffect(() => {
