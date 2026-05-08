@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef, FormEvent, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ArrowUpRight, ShieldCheck, Lock, Eye, X, Box, Hash, Wallet } from "lucide-react";
+import { Search, ArrowUpRight, ShieldCheck, Lock, Eye, X, Box, Hash, Wallet, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import MetricSparkline from "@/components/MetricSparkline";
 import { search, getSuggestions, type SearchSuggestion } from "@/lib/api";
-
+import { getActiveNetwork, onNetworkChange } from "@/lib/config";
 const formatNumber = (n: number) =>
   n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
@@ -36,15 +36,24 @@ const Index = () => {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(-1);
+  const [network, setNetwork] = useState(getActiveNetwork);
   const suggestionsRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
+  const isMainnet = network === "mainnet";
+
   useEffect(() => {
+    const unsub = onNetworkChange(() => setNetwork(getActiveNetwork()));
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (isMainnet) return;
     const id = setInterval(() => setTick((t) => t + 1), 4000);
     return () => clearInterval(id);
-  }, []);
+  }, [isMainnet]);
 
   // Close suggestions on outside click
   useEffect(() => {
@@ -186,6 +195,15 @@ const Index = () => {
 
       {/* Metrics */}
       <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pt-4">
+        {isMainnet ? (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card px-6 py-10 text-center">
+            <Radio className="mb-3 h-6 w-6 text-muted-foreground/50" />
+            <p className="text-sm font-medium text-muted-foreground">Mainnet launching soon</p>
+            <p className="mt-1 text-xs text-muted-foreground/60">
+              Metrics will appear here once the mainnet is live. Switch to Testnet to explore.
+            </p>
+          </div>
+        ) : (
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4">
           {metrics.map(({ label, value, history }, idx) => (
             <div
@@ -201,10 +219,11 @@ const Index = () => {
             </div>
           ))}
         </div>
+        )}
       </section>
 
       {/* Fullscreen metric modal */}
-      {expanded !== null && (
+      {expanded !== null && !isMainnet && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm" onClick={() => setExpanded(null)}>
           <div className="relative w-full max-w-4xl mx-6 rounded-2xl border border-border bg-card p-8 shadow-2xl shadow-black/60" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setExpanded(null)} className="absolute right-4 top-4 rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors" aria-label="Close">
