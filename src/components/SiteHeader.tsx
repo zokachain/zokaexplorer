@@ -16,7 +16,8 @@ const SiteHeader = () => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    return onNetworkChange(() => rerender((n) => n + 1));
+    const unsub = onNetworkChange(() => rerender((n) => n + 1));
+    return () => { unsub(); };
   }, []);
 
   // Close on outside click
