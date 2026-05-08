@@ -223,7 +223,7 @@ const Index = () => {
       </section>
 
       {/* Fullscreen metric modal */}
-      {expanded !== null && (
+      {expanded !== null && !isMainnet && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm" onClick={() => setExpanded(null)}>
           <div className="relative w-full max-w-4xl mx-6 rounded-2xl border border-border bg-card p-8 shadow-2xl shadow-black/60" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setExpanded(null)} className="absolute right-4 top-4 rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors" aria-label="Close">
