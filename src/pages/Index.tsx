@@ -195,6 +195,15 @@ const Index = () => {
 
       {/* Metrics */}
       <section className="relative z-10 mx-auto w-full max-w-5xl px-6 pt-4">
+        {isMainnet ? (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card px-6 py-10 text-center">
+            <Radio className="mb-3 h-6 w-6 text-muted-foreground/50" />
+            <p className="text-sm font-medium text-muted-foreground">Mainnet launching soon</p>
+            <p className="mt-1 text-xs text-muted-foreground/60">
+              Metrics will appear here once the mainnet is live. Switch to Testnet to explore.
+            </p>
+          </div>
+        ) : (
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border lg:grid-cols-4">
           {metrics.map(({ label, value, history }, idx) => (
             <div
@@ -210,6 +219,7 @@ const Index = () => {
             </div>
           ))}
         </div>
+        )}
       </section>
 
       {/* Fullscreen metric modal */}
