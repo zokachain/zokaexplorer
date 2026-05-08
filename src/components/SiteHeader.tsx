@@ -40,7 +40,7 @@ const SiteHeader = () => {
   };
 
   return (
-    <header className="relative z-10 flex items-center justify-between px-6 py-6">
+    <header className="relative z-50 flex items-center justify-between px-6 py-6">
       <Link to="/" className="flex items-center gap-2.5">
         <div className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card">
           <span className="font-mono-tight text-xs font-bold text-foreground">Z</span>
