@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef, FormEvent, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ArrowUpRight, ShieldCheck, Lock, Eye, X, Box, Hash, Wallet } from "lucide-react";
+import { Search, ArrowUpRight, ShieldCheck, Lock, Eye, X, Box, Hash, Wallet, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import MetricSparkline from "@/components/MetricSparkline";
 import { search, getSuggestions, type SearchSuggestion } from "@/lib/api";
-
+import { getActiveNetwork, onNetworkChange } from "@/lib/config";
 const formatNumber = (n: number) =>
   n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
