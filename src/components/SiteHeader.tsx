@@ -36,7 +36,6 @@ const SiteHeader = () => {
   const handleSwitch = (id: NetworkId) => {
     setActiveNetwork(id);
     setOpen(false);
-    window.location.reload(); // reload to reset mock data / connections
   };
 
   return (
