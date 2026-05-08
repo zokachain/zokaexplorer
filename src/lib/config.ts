@@ -49,9 +49,9 @@ export function setActiveNetwork(id: NetworkId) {
   listeners.forEach((fn) => fn());
 }
 
-export function onNetworkChange(fn: () => void) {
+export function onNetworkChange(fn: () => void): () => void {
   listeners.add(fn);
-  return () => listeners.delete(fn);
+  return () => { listeners.delete(fn); };
 }
 
 export function getNetworkConfig(): NetworkConfig {
