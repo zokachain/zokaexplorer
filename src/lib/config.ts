@@ -1,23 +1,39 @@
-// ─── Network Configuration ──────────────────────────────────────
-
 export type NetworkId = "mainnet" | "testnet";
 
 export interface NetworkConfig {
   id: NetworkId;
   label: string;
   version: string;
-  badge?: string; // e.g. "Soon" for mainnet
+  badge?: string;
   rpcUrl: string;
   useMock: boolean;
 }
+
+type RuntimeNetwork = {
+  id?: NetworkId;
+  label?: string;
+  version?: string;
+  rpc_url?: string;
+  rpcUrl?: string;
+  badge?: string;
+};
+
+type RuntimeConfig = {
+  active_network?: NetworkId;
+  networks?: RuntimeNetwork[];
+};
+
+const envRpcUrl =
+  import.meta.env.VITE_RPC_URL_MAINNET ||
+  import.meta.env.VITE_RPC_URL ||
+  (import.meta.env.DEV ? "/rpc" : "");
 
 const NETWORKS: Record<NetworkId, NetworkConfig> = {
   mainnet: {
     id: "mainnet",
     label: "Mainnet",
     version: "v0.1.0",
-    badge: "Soon",
-    rpcUrl: import.meta.env.VITE_RPC_URL_MAINNET || "",
+    rpcUrl: envRpcUrl,
     get useMock() {
       return !this.rpcUrl;
     },
@@ -26,16 +42,16 @@ const NETWORKS: Record<NetworkId, NetworkConfig> = {
     id: "testnet",
     label: "Testnet",
     version: "v0.1.0",
-    rpcUrl: import.meta.env.VITE_RPC_URL_TESTNET || import.meta.env.VITE_RPC_URL || "",
+    rpcUrl: import.meta.env.VITE_RPC_URL_TESTNET || "",
     get useMock() {
       return !this.rpcUrl;
     },
   },
 };
 
-// Reactive network state
 let _activeNetwork: NetworkId =
-  (localStorage.getItem("zoka_network") as NetworkId) || "testnet";
+  (localStorage.getItem("zoka_network") as NetworkId | null) || "mainnet";
+let configLoadStarted: Promise<void> | null = null;
 
 const listeners = new Set<() => void>();
 
@@ -44,14 +60,16 @@ export function getActiveNetwork(): NetworkId {
 }
 
 export function setActiveNetwork(id: NetworkId) {
-  _activeNetwork = id;
-  localStorage.setItem("zoka_network", id);
+  _activeNetwork = NETWORKS[id] ? id : "mainnet";
+  localStorage.setItem("zoka_network", _activeNetwork);
   listeners.forEach((fn) => fn());
 }
 
 export function onNetworkChange(fn: () => void): () => void {
   listeners.add(fn);
-  return () => { listeners.delete(fn); };
+  return () => {
+    listeners.delete(fn);
+  };
 }
 
 export function getNetworkConfig(): NetworkConfig {
@@ -59,10 +77,42 @@ export function getNetworkConfig(): NetworkConfig {
 }
 
 export function getNetworks(): NetworkConfig[] {
-  return Object.values(NETWORKS);
+  return Object.values(NETWORKS).filter((network) => network.rpcUrl || network.id === "mainnet");
 }
 
-// Flat compat export used by api.ts and other code
+export async function ensureNetworkConfigLoaded(): Promise<void> {
+  if (!configLoadStarted) {
+    configLoadStarted = loadRuntimeNetworkConfig();
+  }
+  return configLoadStarted;
+}
+
+async function loadRuntimeNetworkConfig(): Promise<void> {
+  try {
+    const res = await fetch("/zoka-network.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const runtime = (await res.json()) as RuntimeConfig;
+    for (const network of runtime.networks ?? []) {
+      const id = network.id ?? "mainnet";
+      if (!NETWORKS[id]) continue;
+      NETWORKS[id] = {
+        ...NETWORKS[id],
+        label: network.label || NETWORKS[id].label,
+        version: network.version || NETWORKS[id].version,
+        badge: network.badge,
+        rpcUrl: network.rpc_url || network.rpcUrl || NETWORKS[id].rpcUrl,
+      };
+    }
+    if (runtime.active_network && NETWORKS[runtime.active_network]) {
+      _activeNetwork = runtime.active_network;
+      localStorage.setItem("zoka_network", _activeNetwork);
+    }
+    listeners.forEach((fn) => fn());
+  } catch {
+    // A missing runtime config is valid; deployments may use VITE_* env vars.
+  }
+}
+
 export const config = {
   get RPC_URL() {
     return getNetworkConfig().rpcUrl;

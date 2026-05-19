@@ -1,12 +1,28 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, Box, Hash } from "lucide-react";
+import { ArrowLeft, Copy, Box, Hash, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { getBlock } from "@/lib/api";
 import type { Block } from "@/lib/types";
+
+const copyText = async (value: string) => {
+  try {
+    await navigator.clipboard.writeText(value);
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+};
 
 const truncate = (s: string, head = 10, tail = 8) =>
   s.length > head + tail + 1 ? `${s.slice(0, head)}…${s.slice(-tail)}` : s;
@@ -16,9 +32,9 @@ const Field = ({
 }: {
   label: string; value: React.ReactNode; mono?: boolean; copyable?: boolean; link?: string;
 }) => {
-  const onCopy = () => {
+  const onCopy = async () => {
     if (typeof value === "string") {
-      navigator.clipboard.writeText(value);
+      await copyText(value);
       toast({ title: "Copied", description: truncate(value) });
     }
   };
@@ -89,7 +105,7 @@ const BlockDetail = () => {
                   </div>
                   <h1 className="mt-3 font-mono-tight text-2xl text-foreground">#{block.height.toLocaleString()}</h1>
                 </div>
-                <Button variant="outline" size="sm" className="h-9 rounded-lg border-border bg-background text-xs" onClick={() => { navigator.clipboard.writeText(block.hash); toast({ title: "Hash copied" }); }}>
+                <Button variant="outline" size="sm" className="h-9 rounded-lg border-border bg-background text-xs" onClick={async () => { await copyText(block.hash); toast({ title: "Hash copied" }); }}>
                   <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy Hash
                 </Button>
               </div>
@@ -97,9 +113,9 @@ const BlockDetail = () => {
               <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
                 {[
                   { label: "Transactions", value: block.txCount.toString() },
-                  { label: "Size", value: `${block.size} B` },
-                  { label: "Reward", value: `${block.reward} ZKA` },
-                  { label: "Difficulty", value: block.difficulty.toFixed(2) },
+                  { label: "Size", value: block.size > 0 ? `${block.size} B` : "Not exposed" },
+                  { label: "Reward", value: block.reward > 0 ? `${block.reward} ZKA` : "Not exposed" },
+                  { label: "Difficulty", value: block.difficulty > 0 ? block.difficulty.toFixed(2) : "Not exposed" },
                 ].map((m) => (
                   <div key={m.label} className="bg-card px-4 py-3">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{m.label}</div>
@@ -112,22 +128,42 @@ const BlockDetail = () => {
             <div className="mt-6 rounded-xl border border-border bg-card">
               <div className="border-b border-border px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Details</div>
               <Field label="Block Hash" value={block.hash} mono copyable />
-              <Field label="Previous Hash" value={truncate(block.previousHash, 14, 10)} mono copyable />
+              {block.previousHash && <Field label="Previous Hash" value={truncate(block.previousHash, 14, 10)} mono copyable />}
               <Field label="Timestamp" value={new Date(block.timestamp).toUTCString()} />
-              <Field label="Nonce" value={block.nonce.toLocaleString()} mono />
-              <Field label="Miner" value={truncate(block.minerAddress, 14, 10)} mono link={`/address/${block.minerAddress}`} />
+              {block.nonce > 0 && <Field label="Nonce" value={block.nonce.toLocaleString()} mono />}
+              <Field label="Miner" value={<span className="inline-flex items-center gap-1.5"><Lock className="h-3 w-3 text-muted-foreground" />shielded</span>} />
             </div>
 
             <div className="mt-6 rounded-xl border border-border bg-card">
               <div className="border-b border-border px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                Transactions ({block.transactions.length})
+                Public transactions ({block.transactions.length})
               </div>
-              {block.transactions.map((txHash) => (
-                <Link key={txHash} to={`/tx/${txHash}`} className="flex items-center gap-2 border-b border-border px-5 py-3 last:border-b-0 hover:bg-accent/40 transition-colors">
-                  <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="font-mono-tight text-sm text-signal truncate">{truncate(txHash, 16, 10)}</span>
-                </Link>
-              ))}
+              {block.transactions.length > 0 ? (
+                block.transactions.map((txHash) => (
+                  <Link key={txHash} to={`/tx/${txHash}`} className="flex items-center gap-2 border-b border-border px-5 py-3 last:border-b-0 hover:bg-accent/40 transition-colors">
+                    <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-mono-tight text-sm text-signal truncate">{truncate(txHash, 16, 10)}</span>
+                  </Link>
+                ))
+              ) : (
+                <div className="px-5 py-3 text-sm text-muted-foreground">No public transactions</div>
+              )}
+            </div>
+
+            <div className="mt-6 rounded-xl border border-border bg-card">
+              <div className="border-b border-border px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+                Private transaction hashes ({block.privateTransactions?.length ?? 0})
+              </div>
+              {(block.privateTransactions?.length ?? 0) > 0 ? (
+                block.privateTransactions?.map((txHash) => (
+                  <Link key={txHash} to={`/record/private-tx/${txHash}`} className="flex items-center gap-2 border-b border-border px-5 py-3 last:border-b-0 hover:bg-accent/40 transition-colors">
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="font-mono-tight text-sm text-signal truncate">{truncate(txHash, 16, 10)}</span>
+                  </Link>
+                ))
+              ) : (
+                <div className="px-5 py-3 text-sm text-muted-foreground">No private hashes exposed for this block</div>
+              )}
             </div>
           </>
         )}

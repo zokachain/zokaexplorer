@@ -5,12 +5,16 @@
 
 export interface NetworkStats {
   height: number;
-  difficulty: number;
-  hashrate: number;        // MH/s
-  emission: number;        // total ZKA emitted
-  lastBlockTime: number;   // unix ms
+  difficulty: number;       // PoW leading-zero bits
+  hashrate: number;         // estimated network MH/s
+  emission: number;         // total ZKA in circulation
+  lastBlockTime: number;    // unix ms
   networkVersion: string;
-  peerCount: number;
+  mempoolSize?: number;
+  privateTxsConfirmed?: number;
+  minersOnline?: number;
+  connectedPeers?: number;
+  reportedHashrate?: number;
 }
 
 export interface Block {
@@ -25,6 +29,7 @@ export interface Block {
   reward: number;          // ZKA
   minerAddress: string;
   transactions: string[];  // tx hashes
+  privateTransactions?: string[]; // privacy-safe private tx hashes
 }
 
 export interface Transaction {
@@ -55,12 +60,29 @@ export interface Address {
 }
 
 export interface SearchResult {
-  type: "transaction" | "block" | "address";
+  type: "transaction" | "block" | "address" | "record";
   id: string;              // hash, height, or address
   label: string;           // short display text
+  kind?: SafeRecordKind;
 }
 
-export type MetricKey = "height" | "difficulty" | "hashrate" | "emission";
+export type SafeRecordKind =
+  | "commitment"
+  | "nullifier"
+  | "root"
+  | "private-tx"
+  | "hash";
+
+export interface SafeRecord {
+  kind: SafeRecordKind;
+  id: string;
+  status: "found" | "unknown";
+  blockHeight?: number;
+  timestamp?: number;
+  note: string;
+}
+
+export type MetricKey = "height" | "difficulty" | "hashrate" | "emission" | "miners";
 
 export interface MetricDataPoint {
   timestamp: number;

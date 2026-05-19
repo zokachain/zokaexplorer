@@ -96,12 +96,11 @@ const TxDetail = () => {
                 </Button>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
+              <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-3">
                 {[
-                  { label: "Amount", value: `${tx.amount} ZKA` },
-                  { label: "Fee", value: `${tx.fee} ZKA` },
-                  { label: "Block", value: tx.blockHeight.toLocaleString() },
-                  { label: "Confirmations", value: tx.confirmations.toLocaleString() },
+                  { label: "Block", value: tx.blockHeight > 0 ? tx.blockHeight.toLocaleString() : "pending" },
+                  { label: "Confirmations", value: tx.confirmations > 0 ? tx.confirmations.toLocaleString() : "—" },
+                  { label: "Size", value: tx.size > 0 ? `${tx.size} B` : "—" },
                 ].map((m) => (
                   <div key={m.label} className="bg-card px-4 py-3">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{m.label}</div>
@@ -115,16 +114,15 @@ const TxDetail = () => {
               <div className="rounded-xl border border-border bg-card lg:col-span-2">
                 <div className="border-b border-border px-5 py-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Details</div>
                 <Field label="Status" value={<span className="text-signal capitalize">{tx.status}</span>} />
-                <Field label="Timestamp" value={new Date(tx.timestamp).toUTCString()} />
-                <Field label="Block Height" value={tx.blockHeight.toLocaleString()} mono link={`/block/${tx.blockHeight}`} />
-                <Field label="From" value={truncate(tx.from, 14, 10)} mono copyable />
-                <Field label="To" value={tx.to === "shielded" ? (
-                  <span className="inline-flex items-center gap-1.5"><Lock className="h-3 w-3 text-muted-foreground" />shielded</span>
-                ) : truncate(tx.to, 14, 10)} mono={tx.to !== "shielded"} />
-                <Field label="Amount" value={`${tx.amount} ZKA`} mono />
-                <Field label="Fee" value={`${tx.fee} ZKA`} mono />
-                <Field label="Size" value={`${tx.size} bytes`} mono />
-                <Field label="Ring Size" value={tx.ringSize} mono />
+                <Field label="Timestamp" value={tx.timestamp ? new Date(tx.timestamp).toUTCString() : "—"} />
+                {tx.blockHeight > 0 && (
+                  <Field label="Block Height" value={tx.blockHeight.toLocaleString()} mono link={`/block/${tx.blockHeight}`} />
+                )}
+                <Field label="Sender" value={<span className="inline-flex items-center gap-1.5"><Lock className="h-3 w-3 text-muted-foreground" />shielded</span>} />
+                <Field label="Receiver" value={<span className="inline-flex items-center gap-1.5"><Lock className="h-3 w-3 text-muted-foreground" />shielded</span>} />
+                <Field label="Amount" value={<span className="inline-flex items-center gap-1.5"><Lock className="h-3 w-3 text-muted-foreground" />hidden · zk-SNARK verified</span>} />
+                {tx.ringSize > 0 && <Field label="Ring Size" value={tx.ringSize} mono />}
+                {tx.size > 0 && <Field label="Size" value={`${tx.size} bytes`} mono />}
               </div>
 
               <div className="rounded-xl border border-border bg-card">
